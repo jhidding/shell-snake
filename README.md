@@ -5,7 +5,7 @@ author: Johan Hidding
 ---
 
 # Intro
-The following is a Bash script found on Rosetta's Code. This script implements a basic version of the game of Snake and seems to have been contributed by Mark J. Reed. Let's see how it works. Here's a screenshot after a particularly unsuccessful game:
+The following is a Bash script found on [Rosetta Code](https://rosettacode.org/wiki/Snake#UNIX_Shell). This script implements a basic version of the game of Snake and seems to have been contributed by [Mark J. Reed](https://rosettacode.org/wiki/User:Markjreed). Let's see how it works. Here's a screenshot after a particularly unsuccessful game:
 
 ```txt
 
