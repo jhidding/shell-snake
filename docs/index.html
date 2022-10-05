@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Johan Hidding" />
+  <title>Snake in UNIX shell</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="theme.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Snake in UNIX shell</h1>
+<p class="subtitle">disentangling a legacy code</p>
+<p class="author">Johan Hidding</p>
+<!--        <div id="dark-mode-toggle">
+                <p>Dark mode: <button class="dark-mode-button"
+                        aria-label="Toggle dark mode"
+                        onclick="toggle_dark_mode()">
+                        <span></span><span></span>
+                </button></p>
+</div> -->
+</header>
+<div class="row">
+        <div class="col-6 col-s-9" id="main">
+<section id="intro" class="level1">
+<h1>Intro</h1>
+<p>The following is a Bash script found on Rosetta’s Code. This script
+implements a basic version of the game of Snake and seems to have been
+contributed by Mark J. Reed. Let’s see how it works. Here’s a screenshot
+after a particularly unsuccessful game:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode txt"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>@@@@                                                                  *</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                                                                      </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                                                                      </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                                                                      </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                                   GAME OVER                               </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>                                Time: 27 seconds                           </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>                                Final length: 4                            </span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                                                                  </span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<section id="bash-functions" class="level2">
+<h2>Bash functions</h2>
+<p>My Bash is a bit rusty, so here is some relevant documentation:</p>
+<ul>
+<li><code>typeset</code> declares a variable of a certain type. The
+<code>-i</code> flag means integer, <code>-a</code> is for arrays.</li>
+<li><code>clear</code>, clears the screen.</li>
+<li><code>tput</code> output special operators to terminal, specifically
+(<code>man terminfo</code>):
+<ul>
+<li><code>tput cup</code> set cursor position</li>
+<li><code>tput civis</code> set cursor to invisible</li>
+<li><code>tput cnorm</code> set cursor back to normal</li>
+<li><code>tput el</code> clear to end of line</li>
+</ul></li>
+<li><code>stty</code> set how terminal interacts, specifically:
+<ul>
+<li><code>stty -echo</code> disable input echo</li>
+<li><code>stty echo</code> enable input echo</li>
+</ul></li>
+<li><code>read [-t &lt;t&gt;] [-N &lt;n&gt;] [-s] &lt;var&gt;</code>
+reads <code>&lt;n&gt;</code> number of characters from input in
+<code>-s</code> silent mode, on <code>&lt;t&gt;</code> seconds, put
+result in <code>&lt;var&gt;</code>.</li>
+<li><code>$((RANDOM))</code> or <code>$RANDOM</code> draws a random
+integer in the range 0 - 32767.</li>
+<li>Anything in double parentheses can do arithmetic and allows for a
+C-like syntax.</li>
+</ul>
+</section>
+</section>
+<section id="code" class="level1">
+<h1>Code</h1>
+<p>We start by defining a <code>main</code> function and a
+<code>center</code> function.</p>
+<div class="named-code-block">
+<p>file:snake.sh</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span><span class="fu"> main</span> <span class="kw">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;&lt;main&gt;&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;&lt;function-center&gt;&gt;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">main &quot;</span><span class="va">$@</span><span class="st">&quot;</span></span></code></pre></div>
+</div>
+<p>The <code>center</code> function seems to be used to print messages
+that are centered on the console.</p>
+<div class="named-code-block">
+<p>«function-center»</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span><span class="fu"> center</span> <span class="kw">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">typeset</span> <span class="at">-i</span> <span class="va">width</span><span class="op">=</span><span class="va">$1</span> <span class="va">i</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">shift</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">typeset</span> <span class="va">message</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span><span class="va">)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tput</span> cuf <span class="va">$((</span> (<span class="va">width</span><span class="op">-</span><span class="va">${</span><span class="op">#</span><span class="va">message}</span>) <span class="op">/</span> <span class="dv">2</span> <span class="va">))</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$message</span><span class="st">&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code></pre></div>
+</div>
+<section id="setup" class="level2">
+<h2>Setup</h2>
+<p>We’ll see a lot of <code>tput cup "$y" "$x" &amp;&amp; printf
+'0'</code> in here. This is just: put the character <code>0</code> on
+location <code>x, y</code>.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">game_over</span><span class="op">=</span>0</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">height</span><span class="op">=</span><span class="va">$(</span><span class="fu">tput</span> lines<span class="va">)</span> <span class="va">width</span><span class="op">=</span><span class="va">$(</span><span class="fu">tput</span> cols<span class="va">)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># start out in the middle moving to the right</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">dx</span> <span class="va">dy</span> <span class="va">hx</span><span class="op">=</span><span class="va">$((</span> <span class="va">width</span><span class="op">/</span><span class="dv">2</span> <span class="va">))</span> <span class="va">hy</span><span class="op">=</span><span class="va">$((</span> <span class="va">height</span><span class="op">/</span><span class="dv">2</span> <span class="va">))</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-a</span> <span class="va">sx</span><span class="op">=</span><span class="va">($hx)</span> <span class="va">sy</span><span class="op">=</span><span class="va">($hy)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-a</span> <span class="va">timeout</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">clear</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="st">&quot;</span><span class="va">$sy</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$sx</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="bu">printf</span> <span class="st">&#39;@&#39;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="va">$((</span> <span class="va">height</span><span class="op">/</span><span class="dv">2</span><span class="op">+</span><span class="dv">2</span> <span class="va">))</span> 0</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">center</span> <span class="va">$width</span> <span class="st">&quot;Press h, j, k, l to move left, down, up, right&quot;</span></span></code></pre></div>
+</div>
+<p>The <code>fx</code> and <code>fy</code> coordinates tell us where the
+food is.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># place first food</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">fx</span><span class="op">=</span>hx <span class="va">fy</span><span class="op">=</span>hy</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="kw">((</span> <span class="va">fx</span> <span class="op">==</span> <span class="va">hx</span> <span class="kw">&amp;&amp;</span> <span class="va">fy</span> <span class="op">==</span> <span class="va">hy</span> <span class="kw">));</span> <span class="cf">do</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">fx</span><span class="op">=</span><span class="va">$((</span> <span class="va">RANDOM</span> <span class="op">%</span> (<span class="va">width</span><span class="op">-</span><span class="dv">2</span>)<span class="op">+</span><span class="dv">1</span> <span class="va">))</span> <span class="va">fy</span><span class="op">=</span><span class="va">$((</span> <span class="va">RANDOM</span> <span class="op">%</span> (<span class="va">height</span><span class="op">-</span><span class="dv">2</span>)<span class="op">+</span><span class="dv">1</span> <span class="va">))</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="st">&quot;</span><span class="va">$fy</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$fx</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="bu">printf</span> <span class="st">&#39;*&#39;</span></span></code></pre></div>
+</div>
+<p>This little bit also makes the script work with Zshell.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># handle variations between shells</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="va">keypress</span><span class="op">=</span><span class="va">(</span>-N 1<span class="va">)</span> <span class="va">origin</span><span class="op">=</span>0</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">[[</span> <span class="ot">-n</span> <span class="va">$ZSH_VERSION</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">keypress</span><span class="op">=</span><span class="va">(</span>-k<span class="va">)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">origin</span><span class="op">=</span>1</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code></pre></div>
+</div>
+<p>Set the terminal to non-echo mode and hide the cursor.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stty</span> <span class="at">-echo</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> civis</span></code></pre></div>
+</div>
+<p>Wait until a key is pressed.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="va">key</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">read</span> <span class="st">&quot;</span><span class="va">${keypress</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span> <span class="at">-s</span> <span class="va">key</span></span></code></pre></div>
+</div>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">start_time</span><span class="op">=</span><span class="va">$(</span><span class="fu">date</span> +%s<span class="va">)</span></span></code></pre></div>
+</div>
+</section>
+<section id="main-loop" class="level2">
+<h2>Main loop</h2>
+<p>We’ll look at several stages in the main loop:</p>
+<ul>
+<li>read a key</li>
+<li>handle potential key press</li>
+<li>update game state and display</li>
+</ul>
+<p>The loop ends when <code>game_over</code> is signaled.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="st">&quot;</span><span class="va">$((</span> <span class="va">height</span><span class="op">/</span><span class="dv">2</span><span class="op">+</span><span class="dv">2</span> <span class="va">))</span><span class="st">&quot;</span> 0 <span class="kw">&amp;&amp;</span> <span class="fu">tput</span> el</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="kw">((</span> <span class="op">!</span> <span class="va">game_over</span> <span class="kw">));</span> <span class="cf">do</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;&lt;read-key-stroke&gt;&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="st">  &lt;&lt;handle-input&gt;&gt;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="st">  &lt;&lt;update-state&gt;&gt;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="st">done</span></span></code></pre></div>
+</div>
+<p>We read a potential key stroke with a timeout of say 0.1 seconds, by
+calling <code>read -n 1 -t 0.1 -s key</code>. After that function is
+done, and a key has been pressed, the variable <code>$key</code> will
+contain the corresponding character.</p>
+<div class="named-code-block">
+<p>«read-key-stroke»</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="va">timeout</span><span class="op">=</span><span class="va">(</span>-t <span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;0.%04d&#39;</span> <span class="va">$((</span> <span class="dv">2000</span> <span class="op">/</span> (<span class="va">${</span><span class="op">#</span><span class="va">sx</span><span class="op">[@]</span><span class="va">}</span><span class="op">+</span><span class="dv">1</span>) <span class="va">))</span> <span class="va">)</span> <span class="va">)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">[[</span> <span class="ot">-z</span> <span class="va">$key</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">read</span> <span class="st">&quot;</span><span class="va">${timeout</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">${keypress</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span> <span class="at">-s</span> <span class="va">key</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code></pre></div>
+</div>
+<p>The game uses <code>hjkl</code> to move around, like vim. If you
+prefer <code>asdw</code>, this is where to change that. Since I use
+Dvorak layout, this becomes <code>aoe,</code>.</p>
+<div class="named-code-block">
+<p>«handle-input»</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="st">&quot;</span><span class="va">$key</span><span class="st">&quot;</span> <span class="kw">in</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="ss">a</span><span class="kw">)</span> <span class="cf">if</span> <span class="kw">((</span> <span class="va">dx</span> <span class="op">!=</span>  <span class="dv">1</span> <span class="kw">));</span> <span class="cf">then</span> <span class="va">dx</span><span class="op">=</span>-1<span class="kw">;</span> <span class="va">dy</span><span class="op">=</span>0<span class="kw">;</span> <span class="cf">fi;;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="ss">o</span><span class="kw">)</span> <span class="cf">if</span> <span class="kw">((</span> <span class="va">dy</span> <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span> <span class="kw">));</span> <span class="cf">then</span> <span class="va">dy</span><span class="op">=</span>1<span class="kw">;</span>  <span class="va">dx</span><span class="op">=</span>0<span class="kw">;</span> <span class="cf">fi;;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="ss">,</span><span class="kw">)</span> <span class="cf">if</span> <span class="kw">((</span> <span class="va">dy</span> <span class="op">!=</span>  <span class="dv">1</span> <span class="kw">));</span> <span class="cf">then</span> <span class="va">dy</span><span class="op">=</span>-1<span class="kw">;</span> <span class="va">dx</span><span class="op">=</span>0<span class="kw">;</span> <span class="cf">fi;;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="ss">e</span><span class="kw">)</span> <span class="cf">if</span> <span class="kw">((</span> <span class="va">dx</span> <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span> <span class="kw">));</span> <span class="cf">then</span> <span class="va">dx</span><span class="op">=</span>1<span class="kw">;</span>  <span class="va">dy</span><span class="op">=</span>0<span class="kw">;</span> <span class="cf">fi;;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="ss">q</span><span class="kw">)</span> <span class="va">game_over</span><span class="op">=</span>1<span class="kw">;</span> <span class="fu">tput</span> cup 0 0 <span class="kw">&amp;&amp;</span> <span class="ex">print</span> <span class="st">&quot;Final food was at (</span><span class="va">$fx</span><span class="st">,</span><span class="va">$fy</span><span class="st">)&quot;</span><span class="cf">;;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="cf">esac</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="va">key</span><span class="op">=</span></span></code></pre></div>
+</div>
+<div class="named-code-block">
+<p>«update-state»</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">((</span> <span class="va">hx</span> <span class="op">+=</span> <span class="va">dx</span><span class="kw">,</span> <span class="va">hy</span> <span class="op">+=</span> <span class="va">dy</span> <span class="kw">))</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># if we try to go off screen, game over</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">((</span> <span class="va">hx</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="kw">||</span> <span class="va">hx</span> <span class="op">&gt;=</span> <span class="va">width</span> <span class="kw">||</span> <span class="va">hy</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="kw">||</span> <span class="va">hy</span> <span class="op">&gt;=</span> <span class="va">height</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>   <span class="va">game_over</span><span class="op">=</span>1</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if we run into ourself, game over</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="kw">((</span> <span class="va">i</span><span class="op">=</span><span class="dv">0</span><span class="kw">;</span> <span class="va">i</span><span class="op">&lt;</span><span class="va">${</span><span class="op">#</span><span class="va">sx</span><span class="op">[@]</span><span class="va">}</span><span class="kw">;</span> <span class="op">++</span><span class="va">i</span> <span class="kw">));</span> <span class="cf">do</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">((</span> <span class="va">hx</span><span class="op">==</span><span class="va">sx</span><span class="op">[</span>i+origin<span class="op">]</span> <span class="kw">&amp;&amp;</span> <span class="va">hy</span><span class="op">==</span><span class="va">sy</span><span class="op">[</span>i+origin<span class="op">]</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">game_over</span><span class="op">=</span>1</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">break</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">((</span> <span class="va">game_over</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>   <span class="cf">break</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co"># add new spot</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="va">sx</span><span class="op">+=</span><span class="va">($hx)</span> <span class="va">sy</span><span class="op">+=</span><span class="va">($hy)</span></span></code></pre></div>
+</div>
+<p>The next bit also takes care of updating the screen.</p>
+<div class="named-code-block">
+<p>«update-state»</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">((</span> <span class="va">hx</span> <span class="op">==</span> <span class="va">fx</span>  <span class="kw">&amp;&amp;</span> <span class="va">hy</span> <span class="op">==</span> <span class="va">fy</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if we just ate some food, place some new food out</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">ok</span><span class="op">=</span>0</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span>  <span class="kw">((</span> <span class="op">!</span> <span class="va">ok</span> <span class="kw">));</span> <span class="cf">do</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># make sure we don&#39;t put it under ourselves</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">ok</span><span class="op">=</span>1</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">fx</span><span class="op">=</span><span class="va">$((</span> <span class="va">RANDOM</span> <span class="op">%</span> (<span class="va">width</span><span class="op">-</span><span class="dv">2</span>)<span class="op">+</span><span class="dv">1</span> <span class="va">))</span> <span class="va">fy</span><span class="op">=</span><span class="va">$((</span> <span class="va">RANDOM</span> <span class="op">%</span> (<span class="va">height</span><span class="op">-</span><span class="dv">2</span>)<span class="op">+</span><span class="dv">1</span> <span class="va">))</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="kw">((</span> <span class="va">i</span><span class="op">=</span><span class="dv">0</span><span class="kw">;</span> <span class="va">i</span><span class="op">&lt;</span><span class="va">${</span><span class="op">#</span><span class="va">sx</span><span class="op">[@]</span><span class="va">}</span><span class="kw">;</span> <span class="op">++</span><span class="va">i</span> <span class="kw">));</span> <span class="cf">do</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="kw">((</span> <span class="va">fx</span> <span class="op">==</span> <span class="va">sx</span><span class="op">[</span>i+origin<span class="op">]</span> <span class="kw">&amp;&amp;</span> <span class="va">fy</span> <span class="op">==</span> <span class="va">sy</span><span class="op">[</span>i+origin<span class="op">]</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">ok</span><span class="op">=</span>0</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">fi</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">done</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tput</span> cup <span class="st">&quot;</span><span class="va">$fy</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$fx</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="bu">printf</span> <span class="st">&#39;*&#39;</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and don&#39;t remove our tail because we&#39;ve just grown by 1</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if we didn&#39;t just eat food, remove our tail from its previous spot</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tput</span> cup <span class="va">${sy</span><span class="op">[</span>origin<span class="op">]</span><span class="va">}</span> <span class="va">${sx</span><span class="op">[</span>origin<span class="op">]</span><span class="va">}</span> <span class="kw">&amp;&amp;</span> <span class="bu">printf</span> <span class="st">&#39; &#39;</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="va">sx</span><span class="op">=</span><span class="va">(</span> <span class="va">${sx</span><span class="op">[@]:</span><span class="dv">1</span><span class="va">}</span> <span class="va">)</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  <span class="va">sy</span><span class="op">=</span><span class="va">(</span> <span class="va">${sy</span><span class="op">[@]:</span><span class="dv">1</span><span class="va">}</span> <span class="va">)</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co"># draw our new head</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="st">&quot;</span><span class="va">$hy</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$hx</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="bu">printf</span>  <span class="st">&#39;@&#39;</span></span></code></pre></div>
+</div>
+</section>
+<section id="post-mortem" class="level2">
+<h2>Post mortem</h2>
+<p>When it is game over, some messages are printed and we return the
+terminal to normal behaviour.</p>
+<div class="named-code-block">
+<p>«main»</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">typeset</span> <span class="at">-i</span> <span class="va">end_time</span><span class="op">=</span><span class="va">$(</span><span class="fu">date</span> +%s<span class="va">)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="va">$((</span> <span class="va">height</span> <span class="op">/</span> <span class="dv">2</span> <span class="op">-</span><span class="dv">1</span> <span class="va">))</span> 0 <span class="kw">&amp;&amp;</span> <span class="ex">center</span> <span class="va">$width</span> <span class="st">&#39;GAME OVER&#39;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="va">$((</span> <span class="va">height</span> <span class="op">/</span> <span class="dv">2</span> <span class="va">))</span>  0 <span class="kw">&amp;&amp;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">center</span> <span class="va">$width</span> <span class="st">&#39;Time: %d seconds&#39;</span> <span class="va">$((</span> <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span> <span class="va">))</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cup <span class="va">$((</span> <span class="va">height</span> <span class="op">/</span> <span class="dv">2</span> <span class="op">+</span> <span class="dv">1</span> <span class="va">))</span> 0 <span class="kw">&amp;&amp;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">center</span> <span class="va">$width</span> <span class="st">&#39;Final length: %d&#39;</span> <span class="va">${</span><span class="op">#</span><span class="va">sx</span><span class="op">[@]</span><span class="va">}</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">stty</span> echo</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">tput</span> cnorm</span></code></pre></div>
+</div>
+</section>
+</section>
+        </div>
+         <div class="col-3 col-s-3 menu" id="menu-container">
+                <div id="menu"><nav id="TOC" role="doc-toc">
+                                <ul>
+                                <li><a href="#intro">Intro</a>
+                                <ul>
+                                <li><a href="#bash-functions">Bash
+                                functions</a></li>
+                                </ul></li>
+                                <li><a href="#code">Code</a>
+                                <ul>
+                                <li><a href="#setup">Setup</a></li>
+                                <li><a href="#main-loop">Main
+                                loop</a></li>
+                                <li><a href="#post-mortem">Post
+                                mortem</a></li>
+                                </ul></li>
+                                </ul>
+                </nav></div>
+        </div> 
+</div>
+<div class="footer">
+</div>
+<!-- <script>
+function toggle_dark_mode() {
+    var app = document.getElementsByTagName("BODY")[0];
+    if (localStorage.darkMode == "dark") {
+	localStorage.darkMode = "light";
+	app.setAttribute("dark-mode", "light");
+    } else {
+	localStorage.darkMode = "dark";
+	app.setAttribute("dark-mode", "dark");
+    }
+}
+</script> -->
+</body>
+</html>

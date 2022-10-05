@@ -12,42 +12,55 @@ function main {
   clear
   tput cup "$sy" "$sx" && printf '@'
   tput cup $(( height/2+2 )) 0
-  center $width "Press h, j, k, l to move left, down, up, right"`
-
+  center $width "Press h, j, k, l to move left, down, up, right"
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[1]
   # place first food
   typeset -i fx=hx fy=hy
   while (( fx == hx && fy == hy )); do
     fx=$(( RANDOM % (width-2)+1 )) fy=$(( RANDOM % (height-2)+1 ))
   done
   tput cup "$fy" "$fx" && printf '*'
-
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[2]
   # handle variations between shells
   keypress=(-N 1) origin=0
   if [[ -n $ZSH_VERSION ]]; then
     keypress=(-k)
     origin=1
   fi
-
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[3]
   stty -echo
   tput civis
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[4]
   typeset key
   read "${keypress[@]}" -s key
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[5]
   typeset -i start_time=$(date +%s)
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[6]
   tput cup "$(( height/2+2 ))" 0 && tput el
   while (( ! game_over )); do
+    # ~\~ begin <<README.md|read-key-stroke>>[init]
     timeout=(-t $(printf '0.%04d' $(( 2000 / (${#sx[@]}+1) )) ) )
     if [[ -z $key ]]; then
       read "${timeout[@]}" "${keypress[@]}" -s key
     fi
-
+    # ~\~ end
+    # ~\~ begin <<README.md|handle-input>>[init]
     case "$key" in
-      h) if (( dx !=  1 )); then dx=-1; dy=0; fi;;
-      j) if (( dy != -1 )); then dy=1;  dx=0; fi;;
-      k) if (( dy !=  1 )); then dy=-1; dx=0; fi;;
-      l) if (( dx != -1 )); then dx=1;  dy=0; fi;;
+      a) if (( dx !=  1 )); then dx=-1; dy=0; fi;;
+      o) if (( dy != -1 )); then dy=1;  dx=0; fi;;
+      ,) if (( dy !=  1 )); then dy=-1; dx=0; fi;;
+      e) if (( dx != -1 )); then dx=1;  dy=0; fi;;
       q) game_over=1; tput cup 0 0 && print "Final food was at ($fx,$fy)";;
     esac
     key=
+    # ~\~ end
+    # ~\~ begin <<README.md|update-state>>[init]
     (( hx += dx, hy += dy ))
     # if we try to go off screen, game over
     if (( hx < 0 || hx >= width || hy < 0 || hy >= height )); then
@@ -66,7 +79,8 @@ function main {
     fi
     # add new spot
     sx+=($hx) sy+=($hy)
-
+    # ~\~ end
+    # ~\~ begin <<README.md|update-state>>[1]
     if (( hx == fx  && hy == fy )); then
       # if we just ate some food, place some new food out
       ok=0
@@ -91,7 +105,10 @@ function main {
     fi
     # draw our new head
     tput cup "$hy" "$hx" && printf  '@'
+    # ~\~ end
   done
+  # ~\~ end
+  # ~\~ begin <<README.md|main>>[7]
   typeset -i end_time=$(date +%s)
   tput cup $(( height / 2 -1 )) 0 && center $width 'GAME OVER'
   tput cup $(( height / 2 ))  0 &&
